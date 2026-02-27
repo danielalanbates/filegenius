@@ -1,18 +1,11 @@
 """
-File Automation Suite - Core Package
-=====================================
-
-MIT License
-Copyright (c) 2025 Daniel
-
-Cross-platform file automation and system monitoring toolkit.
+FileGenius - Smart File Organization Tool for macOS
+v4.0.0
 """
 
-__version__ = "1.0.0"
-__author__ = "Daniel"
-__license__ = "MIT"
+__version__ = "4.0.0"
+__author__ = "Daniel Alan Bates"
 
-from .system_monitor import SystemMonitor
-from .file_organizer import FileOrganizer
+from .app import main
 
-__all__ = ['SystemMonitor', 'FileOrganizer']
+__all__ = ["main"]
