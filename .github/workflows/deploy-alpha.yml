@@ -1,0 +1,21 @@
+name: Deploy Alpha Site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'alpha-site/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./alpha-site
+          publish_branch: gh-pages
