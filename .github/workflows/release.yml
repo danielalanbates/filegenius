@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Import signing certificate
+        env:
+          CERT_P12_BASE64: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
+          CERT_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_P12_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/fg-signing.keychain
+          CERT_PATH=$RUNNER_TEMP/developer-id.p12
+          echo "$CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          security create-keychain -p "ci-keychain-pass" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "ci-keychain-pass" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -k "$KEYCHAIN_PATH" \
+            -P "$CERT_P12_PASSWORD" -T /usr/bin/codesign
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: -s \
+            -k "ci-keychain-pass" "$KEYCHAIN_PATH"
+
+      - name: Build and notarize DMG
+        env:
+          DEVELOPER_ID: ${{ secrets.DEVELOPER_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          chmod +x distribute.sh
+          ./distribute.sh
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/FileGenius-*.dmg
+          generate_release_notes: true
+          body: |
+            ## Install
+
+            1. Download `FileGenius-${{ github.ref_name }}.dmg`
+            2. Open the DMG and drag **FileGenius** to your Applications folder
+            3. Launch — requires Python 3.12+ from python.org
+
+            > Signed and notarized — no "damaged app" warnings.
